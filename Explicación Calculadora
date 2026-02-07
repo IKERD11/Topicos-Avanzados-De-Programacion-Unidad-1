@@ -1,0 +1,338 @@
+# Desarrollo de una Calculadora con Flet
+
+## 1. Introducción a Flet
+
+Flet es un framework moderno de Python que permite crear aplicaciones web, móviles y de escritorio con una interfaz de usuario elegante y responsiva. Está construido sobre Flutter, lo que garantiza un rendimiento excepcional y una apariencia nativa en todas las plataformas.
+
+## 2. Instalación de Flet
+
+Para comenzar a trabajar con Flet, primero debemos instalarlo en nuestro entorno de Python. Se recomienda tener Python 3.7 o superior instalado.
+
+### Instalación mediante pip
+
+```bash
+pip install flet
+```
+
+Para verificar que la instalación fue exitosa, podemos ejecutar:
+
+```bash
+python -m flet --version
+```
+
+## 3. Estructura Básica de una Aplicación Flet
+
+Toda aplicación Flet comienza con una función principal que recibe un objeto `page` como parámetro. Este objeto representa la ventana o página de la aplicación.
+
+```python
+import flet as ft
+
+def main(page: ft.Page):
+    page.title = "Mi Primera App"
+    page.add(ft.Text("Hola Mundo"))
+
+if __name__ == "__main__":
+    ft.run(main)
+```
+
+## 4. Desarrollo de la Interfaz de la Calculadora
+
+### 4.1. Configuración Inicial de la Página
+
+Comenzamos configurando las propiedades básicas de nuestra página:
+
+```python
+import flet as ft
+
+def main(page: ft.Page):
+    page.title = "Calc App"
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
+```
+
+Estas propiedades aseguran que nuestra calculadora esté centrada tanto horizontal como verticalmente en la ventana.
+
+### 4.2. Creación del Display de Resultados
+
+El área donde se muestran los números y resultados es un componente de texto simple:
+
+```python
+result = ft.Text(value="0", color=ft.Colors.WHITE, size=40)
+```
+
+Este texto tiene:
+- Un valor inicial de "0"
+- Color blanco para contrastar con el fondo oscuro
+- Tamaño de fuente de 40 puntos para mayor legibilidad
+
+### 4.3. Variables de Estado
+
+Para manejar la lógica de la calculadora, necesitamos variables que mantengan el estado de las operaciones:
+
+```python
+operand1 = 0        # Primer número de la operación
+operator = ""       # Operador seleccionado (+, -, *, /)
+new_operand = True  # Indica si se debe iniciar un nuevo número
+```
+
+### 4.4. Implementación del Evento onClick
+
+El evento `onClick` es fundamental para la interactividad de nuestra calculadora. Cuando el usuario presiona un botón, se ejecuta la función `button_clicked`:
+
+```python
+def button_clicked(e):
+    nonlocal operand1, operator, new_operand
+    data = e.control.content.value
+    
+    # Manejo de dígitos y punto decimal
+    if data.isdigit() or data == ".":
+        if new_operand:
+            result.value = "0" if data == "." else data
+            new_operand = False
+        else:
+            if data == "." and "." in result.value:
+                return
+            result.value = result.value + data if result.value != "0" else data
+    
+    # Manejo de operadores
+    elif data in ["+", "-", "*", "/"]:
+        operand1 = float(result.value)
+        operator = data
+        new_operand = True
+    
+    # Cálculo del resultado
+    elif data == "=":
+        if operator:
+            operand2 = float(result.value)
+            if operator == "+":
+                result.value = str(operand1 + operand2)
+            elif operator == "-":
+                result.value = str(operand1 - operand2)
+            elif operator == "*":
+                result.value = str(operand1 * operand2)
+            elif operator == "/":
+                result.value = str(operand1 / operand2) if operand2 != 0 else "Error"
+            new_operand = True
+            operator = ""
+    
+    # Limpiar todo (All Clear)
+    elif data == "AC":
+        result.value = "0"
+        operand1 = 0
+        operator = ""
+        new_operand = True
+    
+    # Cambiar signo
+    elif data == "+/-":
+        if float(result.value) != 0:
+            result.value = str(float(result.value) * -1)
+    
+    # Porcentaje
+    elif data == "%":
+        result.value = str(float(result.value) / 100)
+    
+    page.update()
+```
+
+**Funcionamiento del onClick:**
+
+1. **Captura del valor:** Cuando se hace clic en un botón, `e.control.content.value` obtiene el texto del botón presionado.
+
+2. **Dígitos y punto decimal:** Si es un número o punto, se agrega al display. La variable `new_operand` controla si se debe reemplazar el valor actual o agregarlo.
+
+3. **Operadores:** Al presionar un operador (+, -, *, /), se guarda el valor actual como `operand1` y se prepara para recibir el segundo número.
+
+4. **Igual:** Ejecuta la operación matemática correspondiente y muestra el resultado.
+
+5. **Funciones especiales:** AC limpia todo, +/- cambia el signo, y % calcula el porcentaje.
+
+6. **Actualización:** `page.update()` refresca la interfaz para mostrar los cambios.
+
+### 4.5. Creación de Clases de Botones
+
+Para mantener un código organizado y reutilizable, creamos clases personalizadas para los diferentes tipos de botones:
+
+#### Clase Base CalcButton
+
+```python
+class CalcButton(ft.ElevatedButton):
+    def __init__(self, content, **kwargs):
+        super().__init__(**kwargs)
+        self.content = ft.Text(content, size=20)
+        self.expand = 1
+        self.height = 70
+        self.on_click = button_clicked
+```
+
+Esta clase base define:
+- Texto con tamaño de 20
+- Propiedad `expand=1` para que los botones se distribuyan uniformemente
+- Altura fija de 70 píxeles
+- **El evento `on_click` vinculado a la función `button_clicked`**
+
+#### DigitButton - Botones Numéricos
+
+```python
+class DigitButton(CalcButton):
+    def __init__(self, content, **kwargs):
+        super().__init__(content, **kwargs)
+        self.bgcolor = ft.Colors.WHITE24
+        self.color = ft.Colors.WHITE
+```
+
+Hereda de `CalcButton` y añade:
+- Fondo gris oscuro semi-transparente
+- Texto blanco
+
+#### ActionButton - Botones de Operación
+
+```python
+class ActionButton(CalcButton):
+    def __init__(self, content, **kwargs):
+        super().__init__(content, **kwargs)
+        self.bgcolor = ft.Colors.ORANGE
+        self.color = ft.Colors.WHITE
+```
+
+Para operadores matemáticos (+, -, *, /, =):
+- Fondo naranja distintivo
+- Texto blanco
+
+#### ExtraActionButton - Botones de Función Especial
+
+```python
+class ExtraActionButton(CalcButton):
+    def __init__(self, content, **kwargs):
+        super().__init__(content, **kwargs)
+        self.bgcolor = ft.Colors.BLUE_GREY_100
+        self.color = ft.Colors.BLACK
+```
+
+Para funciones especiales (AC, +/-, %):
+- Fondo gris claro
+- Texto negro
+
+### 4.6. Construcción del Layout
+
+La interfaz se construye utilizando contenedores y filas organizadas jerárquicamente:
+
+```python
+page.add(
+    ft.Container(
+        width=400,
+        height=600,
+        bgcolor=ft.Colors.BLACK,
+        border_radius=ft.BorderRadius.all(20),
+        padding=20,
+        content=ft.Column(
+            spacing=10,
+            controls=[
+                # Fila del display
+                ft.Row(controls=[result], alignment=ft.MainAxisAlignment.END),
+                
+                # Fila de funciones especiales
+                ft.Row(
+                    spacing=10,
+                    controls=[
+                        ExtraActionButton("AC"),
+                        ExtraActionButton("+/-"),
+                        ExtraActionButton("%"),
+                        ActionButton("/"),
+                    ]
+                ),
+                
+                # Filas de números y operadores
+                ft.Row(
+                    controls=[
+                        DigitButton("7"),
+                        DigitButton("8"),
+                        DigitButton("9"),
+                        ActionButton("*"),
+                    ]
+                ),
+                ft.Row(
+                    controls=[
+                        DigitButton("4"),
+                        DigitButton("5"),
+                        DigitButton("6"),
+                        ActionButton("-"),
+                    ]
+                ),
+                ft.Row(
+                    controls=[
+                        DigitButton("1"),
+                        DigitButton("2"),
+                        DigitButton("3"),
+                        ActionButton("+"),
+                    ]
+                ),
+                ft.Row(
+                    controls=[
+                        DigitButton("0", expand=2),  # El cero ocupa el doble de espacio
+                        DigitButton("."),
+                        ActionButton("="),
+                    ],
+                ),
+            ]
+        ),
+    )
+)
+```
+
+**Características del layout:**
+
+- **Container principal:** Contenedor de 400x600 píxeles con fondo negro y bordes redondeados
+- **Column:** Organiza los elementos verticalmente con espaciado de 10 píxeles
+- **Rows:** Cada fila contiene los botones distribuidos horizontalmente
+- **Display:** Alineado a la derecha para simular una calculadora real
+- **Botón "0":** Tiene `expand=2` para ocupar el doble de ancho
+
+## 5. Flujo de Interacción del Usuario
+
+1. **Usuario hace clic en un botón numérico (ej: "7"):**
+   - Se dispara el evento `onClick`
+   - La función `button_clicked` recibe el evento
+   - Se extrae el valor "7" del botón
+   - El valor se muestra en el área de texto (result)
+   - Se actualiza la interfaz
+
+2. **Usuario hace clic en un operador (ej: "+"):**
+   - Se guarda el número actual como `operand1`
+   - Se almacena el operador "+"
+   - Se marca `new_operand = True` para el siguiente número
+
+3. **Usuario ingresa otro número y presiona "=":**
+   - Se toma el nuevo número como `operand2`
+   - Se ejecuta la operación matemática
+   - El resultado se muestra en el display
+   - Se reinicia el estado para una nueva operación
+
+## 6. Ejecución de la Aplicación
+
+Para ejecutar la calculadora:
+
+```bash
+python calc_app.py
+```
+
+Flet se encargará de abrir automáticamente una ventana con la aplicación o un navegador web, dependiendo de la configuración.
+
+## 7. Ventajas de Usar Flet
+
+1. **Simplicidad:** Código Python puro, sin necesidad de HTML, CSS o JavaScript
+2. **Multiplataforma:** Una sola base de código para web, escritorio y móvil
+3. **Interactividad:** Manejo de eventos simple y directo
+4. **Diseño moderno:** Componentes basados en Material Design
+5. **Rendimiento:** Construido sobre Flutter, garantiza fluidez
+
+## 8. Conclusión
+
+Hemos desarrollado una calculadora funcional utilizando Flet, implementando:
+
+- Interfaz gráfica atractiva con botones personalizados
+- Sistema de eventos `onClick` para capturar interacciones del usuario
+- Lógica de calculadora completa con operaciones básicas
+- Manejo de estado para operaciones secuenciales
+- Actualización dinámica del display de resultados
+
+El evento `onClick` es la pieza clave que conecta la interfaz con la lógica, permitiendo que cada botón presionado actualice el área de texto y ejecute las operaciones correspondientes. Esta arquitectura basada en eventos hace que la aplicación sea interactiva, responsiva y fácil de mantener.
