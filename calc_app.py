@@ -87,7 +87,8 @@ def main(page: ft.Page):
 
     page.add(
         ft.Container(
-            expand=True,
+            width=400,
+            height=600,
             bgcolor=ft.Colors.BLACK,
             border_radius=ft.BorderRadius.all(20),
             padding=20,
