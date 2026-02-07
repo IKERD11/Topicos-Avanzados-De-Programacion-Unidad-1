@@ -3,7 +3,9 @@ import flet as ft
 
 def main(page: ft.Page):
     page.title = "Calc App"
-    result = ft.Text(value="0", color=ft.Colors.WHITE, size=20)
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    result = ft.Text(value="0", color=ft.Colors.WHITE, size=40)
 
     # Variables de estado
     operand1 = 0
@@ -60,8 +62,9 @@ def main(page: ft.Page):
     class CalcButton(ft.ElevatedButton):
         def __init__(self, content, **kwargs):
             super().__init__(**kwargs)
-            self.content = ft.Text(content)
+            self.content = ft.Text(content, size=20)
             self.expand = 1
+            self.height = 70
             self.on_click = button_clicked
 
     class DigitButton(CalcButton):
@@ -84,14 +87,16 @@ def main(page: ft.Page):
 
     page.add(
         ft.Container(
-            width=350,
+            expand=True,
             bgcolor=ft.Colors.BLACK,
             border_radius=ft.BorderRadius.all(20),
             padding=20,
             content=ft.Column(
+                spacing=10,
                 controls=[
                     ft.Row(controls=[result], alignment=ft.MainAxisAlignment.END),
                     ft.Row(
+                        spacing=10,
                         controls=[
                             ExtraActionButton("AC"),
                             ExtraActionButton("+/-"),
